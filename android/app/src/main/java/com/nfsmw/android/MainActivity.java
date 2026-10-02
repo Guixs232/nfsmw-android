@@ -54,6 +54,9 @@ public final class MainActivity extends Activity {
     private Button selectFolder;
     private Button launchGame;
     private Button sendReport;
+    private LinearLayout languageBar;
+    private static final String PREF_UI = "nfsmw_ui";
+    private static final String KEY_LANGUAGE = "language";
     private File pendingReport;
     private boolean pendingGithub;
     private final ExecutorService importer = Executors.newSingleThreadExecutor();
@@ -124,7 +127,7 @@ public final class MainActivity extends Activity {
         logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
         left.addView(logo, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(92)));
 
-        TextView subtitle = label("Xbox 360 · recompilado para Android", 13, 0x99FFFFFF, false);
+        TextView subtitle = label(tr("Xbox 360 · recompilado para Android", "Xbox 360 · recompiled for Android", "Xbox 360 · recompilado para Android"), 13, 0x99FFFFFF, false);
         subtitle.setGravity(Gravity.CENTER);
         left.addView(subtitle, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -134,7 +137,7 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         cardParams.topMargin = dp(12);
         left.addView(card, cardParams);
-        card.addView(label("ARCHIVOS DEL JUEGO", 12, ACCENT, true));
+        card.addView(label(tr("ARQUIVOS DO JOGO", "GAME FILES", "ARCHIVOS DEL JUEGO"), 12, ACCENT, true));
         importStatus = label("", 13, 0xDDFFFFFF, false);
         importStatus.setPadding(0, dp(4), 0, dp(6));
         card.addView(importStatus);
@@ -154,7 +157,7 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(10)));
         card.addView(shaderPanel);
 
-        launchGame = actionButton("JUGAR", true);
+        launchGame = actionButton(tr("JOGAR", "PLAY", "JUGAR"), true);
         launchGame.setVisibility(View.GONE);
         launchGame.setOnClickListener(view -> play());
         LinearLayout.LayoutParams playParams = new LinearLayout.LayoutParams(
@@ -162,12 +165,20 @@ public final class MainActivity extends Activity {
         playParams.topMargin = dp(12);
         left.addView(launchGame, playParams);
 
-        selectFolder = actionButton("Elegir carpeta del juego", false);
+        selectFolder = actionButton(tr("Escolher pasta do jogo", "Choose game folder", "Elegir carpeta del juego"), false);
         selectFolder.setOnClickListener(view -> selectGameFolder());
         LinearLayout.LayoutParams folderParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(46));
         folderParams.topMargin = dp(10);
         left.addView(selectFolder, folderParams);
+
+        // Language selector: deliberately placed below the game-folder action so it stays visible
+        // without competing with the primary JUGAR button.
+        languageBar = buildLanguageBar();
+        LinearLayout.LayoutParams languageParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        languageParams.topMargin = dp(10);
+        left.addView(languageBar, languageParams);
 
         // Right: graphics options.
         LinearLayout right = card();
@@ -175,8 +186,8 @@ public final class MainActivity extends Activity {
                 0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
         rightParams.leftMargin = dp(24);
         columns.addView(right, rightParams);
-        right.addView(label("OPCIONES GRÁFICAS", 12, ACCENT, true));
-        TextView note = label("Se aplican al iniciar el juego.", 12, 0x88FFFFFF, false);
+        right.addView(label(tr("OPÇÕES GRÁFICAS", "GRAPHICS OPTIONS", "OPCIONES GRÁFICAS"), 12, ACCENT, true));
+        TextView note = label(tr("Aplicadas ao iniciar o jogo.", "Applied when the game starts.", "Se aplican al iniciar el juego."), 12, 0x88FFFFFF, false);
         note.setPadding(0, dp(2), 0, dp(4));
         right.addView(note);
         ScrollView scroll = new ScrollView(this);
@@ -184,7 +195,7 @@ public final class MainActivity extends Activity {
         optionsList.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(optionsList);
         right.addView(scroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        sendReport = actionButton("Enviar crash o log", false);
+        sendReport = actionButton(tr("Enviar crash ou log", "Send crash or log", "Enviar crash o log"), false);
         sendReport.setOnClickListener(view -> chooseReportDestination());
         LinearLayout.LayoutParams reportParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
@@ -192,6 +203,46 @@ public final class MainActivity extends Activity {
         right.addView(sendReport, reportParams);
         refreshOptions();
         return screen;
+    }
+
+
+    private String language() {
+        return getSharedPreferences(PREF_UI, MODE_PRIVATE).getString(KEY_LANGUAGE, "pt-BR");
+    }
+
+    private LinearLayout buildLanguageBar() {
+        LinearLayout bar = card();
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(12), dp(8), dp(12), dp(8));
+        TextView title = label("🌐  " + tr("Idioma do aplicativo", "App language", "Idioma de la aplicación"), 12, 0xCCFFFFFF, true);
+        bar.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        addLanguageButton(bar, "🇧🇷  Português", "pt-BR");
+        addLanguageButton(bar, "🇺🇸  English", "en");
+        addLanguageButton(bar, "🇪🇸  Español", "es");
+        return bar;
+    }
+
+    private void addLanguageButton(LinearLayout bar, String text, String code) {
+        Button b = actionButton(text, code.equals(language()));
+        b.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        b.setLetterSpacing(0f);
+        b.setOnClickListener(v -> {
+            if (!code.equals(language())) {
+                getSharedPreferences(PREF_UI, MODE_PRIVATE).edit().putString(KEY_LANGUAGE, code).apply();
+                recreate();
+            }
+        });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(42), 1f);
+        lp.leftMargin = dp(6);
+        bar.addView(b, lp);
+    }
+
+    private String tr(String pt, String en, String es) {
+        String lang = language();
+        if ("en".equals(lang)) return en;
+        if ("es".equals(lang)) return es;
+        return pt;
     }
 
     // ---- Shader library ------------------------------------------------------------------------------------
@@ -408,8 +459,8 @@ public final class MainActivity extends Activity {
         }
         SharedPreferences controls = getSharedPreferences("nfsmw_controls", MODE_PRIVATE);
         boolean stretch = controls.getBoolean("stretch", true);
-        optionsList.addView(optionRow("Formato de imagen",
-                stretch ? "Estirada a toda la pantalla" : "Original 16:9", () -> {
+        optionsList.addView(optionRow(tr("Formato da imagem", "Image format", "Formato de imagen"),
+                stretch ? tr("Esticada para tela inteira", "Stretched to full screen", "Estirada a toda la pantalla") : tr("Original 16:9", "Original 16:9", "Original 16:9"), () -> {
                     controls.edit().putBoolean("stretch", !stretch).apply();
                     refreshOptions();
                 }));
@@ -428,7 +479,7 @@ public final class MainActivity extends Activity {
                     dialog.dismiss();
                     refreshOptions();
                 })
-                .setNegativeButton("Cancelar", null)
+                .setNegativeButton(tr("Cancelar", "Cancel", "Cancelar"), null)
                 .show();
     }
 
@@ -458,9 +509,9 @@ public final class MainActivity extends Activity {
     private void showChecks(File folder) {
         checksList.removeAllViews();
         addCheck("default.xex", new File(folder, "default.xex").isFile(), true);
-        addCheck("Carpeta NFS", new File(folder, "NFS").isDirectory(), true);
-        addCheck("Carpeta Movies", new File(folder, "Movies").isDirectory(), true);
-        addCheck("Shaders del renderizador nativo", ShaderBuilder.hasLibrary(folder), false);
+        addCheck(tr("Pasta NFS", "NFS folder", "Carpeta NFS"), new File(folder, "NFS").isDirectory(), true);
+        addCheck(tr("Pasta Movies", "Movies folder", "Carpeta Movies"), new File(folder, "Movies").isDirectory(), true);
+        addCheck(tr("Shaders do renderizador nativo", "Native renderer shaders", "Shaders del renderizador nativo"), ShaderBuilder.hasLibrary(folder), false);
     }
 
     private void addCheck(String name, boolean ok, boolean required) {
@@ -781,12 +832,12 @@ public final class MainActivity extends Activity {
         if (isValidGameFolder(gameRoot)) {
             setImportStatus((notice == null ? "" : notice + "\n") + "Memoria interna/" + GAME_FOLDER_NAME);
             launchGame.setVisibility(View.VISIBLE);
-            selectFolder.setText("Cambiar carpeta del juego");
+            selectFolder.setText(tr("Alterar pasta do jogo", "Change game folder", "Cambiar carpeta del juego"));
         } else {
             setImportStatus("Elige la carpeta extraída del juego (con default.xex, NFS y Movies). Se copiará a " +
                     "Memoria interna/" + GAME_FOLDER_NAME + ".");
             launchGame.setVisibility(View.GONE);
-            selectFolder.setText("Elegir carpeta del juego");
+            selectFolder.setText(tr("Escolher pasta do jogo", "Choose game folder", "Elegir carpeta del juego"));
         }
     }
 
