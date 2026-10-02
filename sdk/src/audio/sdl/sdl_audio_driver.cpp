@@ -44,8 +44,8 @@ REXCVAR_DEFINE_INT32(audio_sdl_rafaga_tramas, 0, "Audio",
 REXCVAR_DEFINE_BOOL(audio_sdl_bomba, REX_PLATFORM_ANDROID != 0, "Audio",
                     "Pedir audio a ritmo constante cada 5,333 ms, independiente de las rafagas del "
                     "dispositivo (por defecto en Android)");
-REXCVAR_DEFINE_INT32(audio_sdl_bomba_cola, REX_PLATFORM_ANDROID ? 12 : 6, "Audio",
-                     "Tramas de reserva de la bomba SDL (12 = 64 ms; necesita audio_sdl_bomba)")
+REXCVAR_DEFINE_INT32(audio_sdl_bomba_cola, REX_PLATFORM_ANDROID ? 16 : 6, "Audio",
+                     "Tramas de reserva de la bomba SDL (16 = 85 ms en Android; necesita audio_sdl_bomba)")
     .range(2, 32);
 REXCVAR_DEFINE_INT32(audio_volcado_salida_s, 0, "Audio",
                      "Diagnostico: segundos de lo que el driver SDL entrega al dispositivo (con los "
